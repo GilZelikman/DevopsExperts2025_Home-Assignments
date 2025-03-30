@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: date-logger
+spec:
+  schedule: "*/1 * * * *"  # Runs every minute
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+            - name: log-storage
+              persistentVolumeClaim:
+                claimName: log-pvc  # PVC for log storage
+          containers:
+            - name: logger
+              image: busybox
+              command: ["/bin/sh", "-c", "date >> /var/log/date.log"]
+              volumeMounts:
+                - name: log-storage
+                  mountPath: /var/log  # Shared log path
+            - name: sidecar
+              image: busybox
+              command: ["/bin/sh", "-c", "tail -f /var/log/date.log"]
+              volumeMounts:
+                - name: log-storage
+                  mountPath: /var/log  # Same mount path
+          restartPolicy: OnFailure
